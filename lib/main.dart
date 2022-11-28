@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pspdfkit_flutter/pspdfkit.dart';
+import 'package:text_to_speech/text_to_speech.dart';
 
 // Filename of the PDF you'll download and save.
 const fileName = '/pspdfkit-flutter-quickstart-guide.pdf';
@@ -49,6 +50,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   // Show the progress status to the user.
   String progressString = 'File has not been downloaded yet.';
+  TextToSpeech tts = TextToSpeech();
 
   // This method uses Dio to download a file from the given URL
   // and saves the file to the provided `savePath`.
@@ -60,7 +62,9 @@ class _MyHomePageState extends State<MyHomePage> {
         options: Options(
             responseType: ResponseType.bytes,
             followRedirects: false,
-            validateStatus: (status) { return status! < 500; }
+            validateStatus: (status) {
+              return status! < 500;
+            }
         ),
       );
       var file = File(savePath).openSync(mode: FileMode.write);
@@ -82,10 +86,12 @@ class _MyHomePageState extends State<MyHomePage> {
     progress = done / total;
     setState(() {
       if (progress >= 1) {
-        progressString = '✅ File has finished downloading. Try opening the file.';
+        progressString =
+        '✅ File has finished downloading. Try opening the file.';
         didDownloadPDF = true;
       } else {
-        progressString = 'Download progress: ${(progress * 100).toStringAsFixed(0)}% done.';
+        progressString =
+        'Download progress: ${(progress * 100).toStringAsFixed(0)}% done.';
       }
     });
   }
@@ -100,6 +106,14 @@ class _MyHomePageState extends State<MyHomePage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
+            IconButton(onPressed: () {
+              String text = "طنط نور";
+              tts.speak(text);
+              double volume = 50.0;
+              tts.setVolume(volume);
+              String language = 'ar';
+              tts.setLanguage(language);
+            }, icon: const Icon(Icons.add)),
             const Text(
               'First, download a PDF file. Then open it.',
             ),
