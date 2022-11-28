@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter_pdfview/flutter_pdfview.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pspdfkit_flutter/pspdfkit.dart';
 import 'package:text_to_speech/text_to_speech.dart';
@@ -41,7 +43,6 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-
   // Track the progress of a downloaded file here.
   double progress = 0;
 
@@ -64,8 +65,7 @@ class _MyHomePageState extends State<MyHomePage> {
             followRedirects: false,
             validateStatus: (status) {
               return status! < 500;
-            }
-        ),
+            }),
       );
       var file = File(savePath).openSync(mode: FileMode.write);
       print(file.path);
@@ -87,13 +87,70 @@ class _MyHomePageState extends State<MyHomePage> {
     setState(() {
       if (progress >= 1) {
         progressString =
-        '✅ File has finished downloading. Try opening the file.';
+            '✅ File has finished downloading. Try opening the file.';
         didDownloadPDF = true;
       } else {
         progressString =
-        'Download progress: ${(progress * 100).toStringAsFixed(0)}% done.';
+            'Download progress: ${(progress * 100).toStringAsFixed(0)}% done.';
       }
     });
+  }
+  loadPDF() async {
+    final dio = Dio();
+    final Completer<PDFViewController> controller =
+    Completer<PDFViewController>();
+    int? pages = 0;
+    int? currentPage = 0;
+    bool isReady = false;
+    String errorMessage = '';
+    Map<String, String> headers = {
+      'Content-type': 'application/json; charset=UTF-8',
+      'Accept': 'application/json',
+    };
+    final response =
+    await dio.get(imageUrl, options: Options(
+        headers: headers,
+        responseType: ResponseType.bytes,
+        followRedirects: false,
+        validateStatus: (status) {
+          return status! < 500;
+        }), );
+    var tempDir = await getTemporaryDirectory();
+    // final bytes = response.data;
+    var file = File(tempDir.path+fileName).openSync(mode: FileMode.write);
+    file.writeFromSync(response.data);
+    print(file);
+    await file.close();
+    // print(bytes);
+    // print(response.statusCode);
+    // var dir = await getTemporaryDirectory();
+    // File file = File(dir.path + "/data.pdf");
+    // await file.writeAsBytes(bytes, flush: true);
+    // PDFView(
+    //   filePath: file.path,
+    //   enableSwipe: true,
+    //   swipeHorizontal: true,
+    //   autoSpacing: false,
+    //   pageFling: false,
+    //   onRender: (_pages) {
+    //     pages = _pages;
+    //     isReady = true;
+    //   },
+    //   onError: (error) {
+    //     print(error.toString());
+    //   },
+    //   onPageError: (page, error) {
+    //     print('$page: ${error.toString()}');
+    //   },
+    //   onViewCreated: (PDFViewController pdfViewController) {
+    //     controller.complete(pdfViewController);
+    //   },
+    //   onPageChanged: (int? page, int? total) {
+    //     print('page change: $page/$total');
+    //   },
+    // );
+    //
+    // return file;
   }
 
   @override
@@ -106,24 +163,32 @@ class _MyHomePageState extends State<MyHomePage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            IconButton(onPressed: () {
-              String text = "طنط نور";
-              tts.speak(text);
-              double volume = 50.0;
-              tts.setVolume(volume);
-              String language = 'ar';
-              tts.setLanguage(language);
-            }, icon: const Icon(Icons.add)),
+            IconButton(
+                onPressed: () {
+                loadPDF();
+
+
+
+                  // String text = "طنط نور";
+                  // tts.speak(text);
+                  // double volume = 50.0;
+                  // tts.setVolume(volume);
+                  // String language = 'ar';
+                  // tts.setLanguage(language);
+                },
+                icon: const Icon(Icons.add)),
             const Text(
               'First, download a PDF file. Then open it.',
             ),
             TextButton(
               // Here, you download and store the PDF file in the temporary
               // directory.
-              onPressed: didDownloadPDF ? null : () async {
-                var tempDir = await getTemporaryDirectory();
-                download(Dio(), imageUrl, tempDir.path + fileName);
-              },
+              onPressed: didDownloadPDF
+                  ? null
+                  : () async {
+                      var tempDir = await getTemporaryDirectory();
+                      download(Dio(), imageUrl, tempDir.path + fileName);
+                    },
               child: const Text('Download a PDF file'),
             ),
             Text(
@@ -132,10 +197,14 @@ class _MyHomePageState extends State<MyHomePage> {
             TextButton(
               // Disable the button if no PDF is downloaded yet. Once the
               // PDF file is downloaded, you can then open it using PSPDFKit.
-              onPressed: !didDownloadPDF ? null : () async {
-                var tempDir = await getTemporaryDirectory();
-                await Pspdfkit.present(tempDir.path + fileName);
-              },
+              onPressed:
+              // !didDownloadPDF
+              //     ? null
+              //     :
+                  () async {
+                      var tempDir = await getTemporaryDirectory();
+                      await Pspdfkit.present(tempDir.path + fileName);
+                    },
               child: Text('Open the downloaded file using PSPDFKit'),
             ),
           ],
